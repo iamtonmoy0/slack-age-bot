@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
+
+	"strconv"
 
 	"github.com/shomali11/slacker"
 )
 
-func printCommandEvents(analysisChannel <-chan *slacker.CommandEvent) {
-	for event := range analysisChannel {
+func printCommandEvents(analyticsChannel <-chan *slacker.CommandEvent) {
+	for event := range analyticsChannel {
 		fmt.Println("command events")
 		fmt.Println(event.Timestamp)
 		fmt.Println(event.Command)
@@ -24,4 +28,27 @@ func main() {
 	bot := slacker.NewClient(os.Getenv("slack bot token"), os.Getenv("slack app token"))
 
 	go printCommandEvents(bot.CommandEvents())
+
+	bot.Command("my yob  is <year>", &slacker.CommandDefinition{
+		Description: "yob calculator",
+		Example:     "my yob is 2020",
+
+		Handler: func(botCtx slacker.BotContext, request slacker.Request, response slacker.ResponseWriter) {
+			year := request.Param("year")
+			yob, err := strconv.Atoi(year)
+			if err != nil {
+				println("error")
+			}
+			age := 2021 - yob
+			r := fmt.Sprintf("age is %d", age)
+			response.Reply(r)
+		},
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err := bot.Listen(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
